@@ -1,0 +1,94 @@
+name: CI/CD Pipeline - Cloud Destinations Demo
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  # JOB 1: Run automated tests
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest test_app.py -v --tb=short
+
+  # JOB 2: Build Docker image and push to Docker Hub
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test  # only runs if tests PASS
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/cicd-demo:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/cicd-demo:${{ github.sha }} \
+                     ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
+
+      - name: Push to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/cicd-demo:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
+
+  # JOB 3: Deploy to AWS EC2
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    needs: build-and-push  # only runs if image was built
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Ensure Docker is available and running on EC2
+            if ! command -v docker >/dev/null 2>&1; then
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+            sudo systemctl enable --now docker
+
+            # Pull the new image
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
+
+            # Stop and remove old container (ignore error if not running)
+            sudo docker stop cicd-app || true
+            sudo docker rm cicd-app || true
+
+            # Start new container
+            sudo docker run -d \
+              --name cicd-app \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
+
+            echo "Deployment complete!"
+            sudo docker ps
