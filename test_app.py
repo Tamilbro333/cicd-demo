@@ -14,24 +14,31 @@ def test_home_returns_200(client):
 
 def test_home_renders_dashboard_html(client):
     response = client.get('/')
-    assert b'CI/CD Pipeline Live Workflow Dashboard' in response.data
+    assert b'Live Deployment Dashboard' in response.data
 
-def test_metadata_has_version(client):
+def test_metadata_endpoint(client):
     response = client.get('/api/metadata')
     data = json.loads(response.data)
-    assert data['version'] == '1.0.1'
+    assert 'version' in data
+    assert data['app'] == 'My CI/CD Pipeline Project'
 
-def test_workflow_status_endpoint(client):
-    response = client.get('/api/workflow-status')
+def test_stats_endpoint(client):
+    response = client.get('/api/stats')
     data = json.loads(response.data)
-    assert data['aws_deploy_ok'] == True
+    assert 'cpu_usage' in data
+    assert 'aws_region' in data
+
+def test_github_endpoint(client):
+    response = client.get('/api/github')
+    data = json.loads(response.data)
+    assert 'status' in data
+
+def test_docker_endpoint(client):
+    response = client.get('/api/docker')
+    data = json.loads(response.data)
+    assert 'logs' in data
 
 def test_health_endpoint(client):
     response = client.get('/health')
     data = json.loads(response.data)
     assert data['healthy'] == True
-
-def test_info_has_tech_stack(client):
-    response = client.get('/info')
-    data = json.loads(response.data)
-    assert 'Docker' in data['tech_stack']

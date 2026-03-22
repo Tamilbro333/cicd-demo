@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CI/CD Pipeline Live Dashboard</title>
+  <title>CI/CD Live Pipeline</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,332 +15,123 @@
       --text: #f5f9ff;
       --muted: #b4c2de;
       --primary: #00d49a;
-      --primary-soft: rgba(0, 212, 154, 0.2);
       --accent: #ff9d3b;
       --danger: #ff5d5d;
-      --border: rgba(255, 255, 255, 0.18);
+      --border: rgba(255, 255, 255, 0.15);
       --ring: rgba(0, 212, 154, 0.45);
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: "Space Grotesk", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 10% 20%, rgba(0, 212, 154, 0.16), transparent 32%),
-        radial-gradient(circle at 90% 5%, rgba(255, 157, 59, 0.14), transparent 28%),
-        linear-gradient(180deg, #07101d 0%, #0b1324 46%, #0a111f 100%);
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      margin: 0; min-height: 100vh; font-family: "Space Grotesk", sans-serif;
+      color: var(--text); background: var(--bg);
+      display: grid; padding: 24px; justify-content: center;
     }
-
-    .layout {
-      width: min(1150px, 100%);
-      display: grid;
-      gap: 18px;
-    }
-
+    .layout { width: min(1200px, 100%); display: grid; gap: 18px; }
     .hero {
-      border: 1px solid var(--border);
-      background: linear-gradient(140deg, rgba(0, 212, 154, 0.14), rgba(15, 26, 46, 0.9));
-      border-radius: 18px;
-      padding: clamp(18px, 3vw, 30px);
-      display: grid;
-      gap: 12px;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
-      animation: rise 600ms ease-out both;
+      border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+      background: linear-gradient(140deg, rgba(0, 212, 154, 0.1), var(--surface));
     }
+    .eyebrow { font-size: 13px; color: var(--primary); text-transform: uppercase; font-family: "IBM Plex Mono", monospace; }
+    h1 { margin: 8px 0; font-size: 2rem; }
+    .subtitle { color: var(--muted); margin: 0 0 16px 0; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 18px; }
+    .card h3 { margin: 0 0 12px 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 4px;}
+    .stat-label { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 0.85rem;}
+    .stat-val { font-weight: 500; font-size: 0.95rem; }
 
-    .eyebrow {
-      font-size: 13px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--primary);
-      font-family: "IBM Plex Mono", monospace;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.6rem, 4.2vw, 2.8rem);
-      line-height: 1.08;
-      letter-spacing: 0.02em;
-    }
-
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-      max-width: 72ch;
-      font-size: clamp(0.95rem, 2vw, 1.08rem);
-    }
-
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }
-
-    .stat {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      background: var(--surface-soft);
-      backdrop-filter: blur(2px);
-      animation: rise 650ms ease-out both;
-    }
-
-    .label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      font-family: "IBM Plex Mono", monospace;
-    }
-
-    .value {
-      margin-top: 8px;
-      font-size: 1.08rem;
-      word-break: break-word;
-    }
-
-    .status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 11px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-family: "IBM Plex Mono", monospace;
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--danger);
-      box-shadow: 0 0 0 0 rgba(255, 93, 93, 0.55);
-      animation: pulse 1.8s infinite;
-    }
-
-    .healthy .dot {
-      background: var(--primary);
-      box-shadow: 0 0 0 0 var(--ring);
-    }
-
-    .pipeline {
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      background: rgba(15, 26, 46, 0.88);
-      padding: 20px;
-      animation: rise 750ms ease-out both;
-    }
-
-    .pipeline h2 {
-      margin: 0 0 14px;
-      font-size: 1.1rem;
-      letter-spacing: 0.03em;
-    }
-
-    .stages {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px;
-    }
-
-    .stage {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      background: var(--surface-soft);
-      transform: translateY(8px);
-      opacity: 0;
-      animation: stageIn 550ms ease forwards;
-    }
-
-    .stage:nth-child(1) { animation-delay: 110ms; }
-    .stage:nth-child(2) { animation-delay: 210ms; }
-    .stage:nth-child(3) { animation-delay: 310ms; }
-    .stage:nth-child(4) { animation-delay: 410ms; }
-
-    .stage-title {
-      font-size: 0.86rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-family: "IBM Plex Mono", monospace;
-    }
-
-    .stage-state {
-      margin-top: 10px;
-      font-size: 1rem;
-    }
-
-    .ok {
-      color: var(--primary);
-    }
-
-    .warn {
-      color: var(--accent);
-    }
-
-    .footer-note {
-      color: var(--muted);
-      font-size: 0.9rem;
-      text-align: right;
-      font-family: "IBM Plex Mono", monospace;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 var(--ring);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(0, 212, 154, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 212, 154, 0);
-      }
-    }
-
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(18px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes stageIn {
-      from {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    .logs-panel { background: #000; padding: 12px; border-radius: 8px; font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; color: #00d49a; white-space: pre-wrap; overflow-x: auto; max-height: 250px; }
+    
+    .status-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; background: var(--surface-soft); border: 1px solid var(--border); font-family: "IBM Plex Mono";}
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+    .dot.ok { background: var(--primary); box-shadow: 0 0 0 4px rgba(0, 212, 154, 0.2); }
+    
+    .tag { background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
   </style>
 </head>
 <body>
   <main class="layout">
     <section class="hero">
-      <div class="eyebrow">Cloud Destinations Demo</div>
-      <h1>CI/CD Pipeline Live Workflow Dashboard</h1>
-      <p class="subtitle">One screen to watch your commit-to-deploy journey: repository events, build lifecycle, deployment metadata, and application runtime health.</p>
-      <span id="health-chip" class="status-chip"><span class="dot"></span><span id="health-text">Checking health...</span></span>
-      <div class="stat-grid">
-        <article class="stat">
-          <div class="label">Service</div>
-          <div class="value" id="service-name">-</div>
-        </article>
-        <article class="stat">
-          <div class="label">Version</div>
-          <div class="value" id="version">-</div>
-        </article>
-        <article class="stat">
-          <div class="label">Commit SHA</div>
-          <div class="value" id="commit">-</div>
-        </article>
-        <article class="stat">
-          <div class="label">Branch</div>
-          <div class="value" id="branch">-</div>
-        </article>
-      </div>
+      <div class="eyebrow" id="app-name">Loading...</div>
+      <h1>Live Deployment Dashboard</h1>
+      <p class="subtitle">Fetching real metrics direct from AWS EC2, local Docker daemon, and GitHub API.</p>
+      <div class="status-chip"><div class="dot" id="health-dot"></div><span id="health-text">Checking API...</span></div>
     </section>
 
-    <section class="pipeline">
-      <h2>Pipeline Stage Status</h2>
-      <div class="stages">
-        <article class="stage">
-          <div class="stage-title">Code Pushed</div>
-          <div class="stage-state ok" id="stage-code">Completed</div>
-        </article>
-        <article class="stage">
-          <div class="stage-title">Tests</div>
-          <div class="stage-state" id="stage-tests">Pending</div>
-        </article>
-        <article class="stage">
-          <div class="stage-title">Docker Build</div>
-          <div class="stage-state" id="stage-build">Pending</div>
-        </article>
-        <article class="stage">
-          <div class="stage-title">AWS Deploy</div>
-          <div class="stage-state" id="stage-deploy">Pending</div>
-        </article>
-      </div>
-    </section>
+    <div class="grid">
+      <article class="card">
+        <h3>AWS & Server Stats</h3>
+        <div class="stat-row"><span class="stat-label">Instance Type</span><span class="stat-val" id="aws-type">...</span></div>
+        <div class="stat-row"><span class="stat-label">Region</span><span class="stat-val" id="aws-region">...</span></div>
+        <div class="stat-row"><span class="stat-label">CPU Usage</span><span class="stat-val" id="sys-cpu">...</span></div>
+        <div class="stat-row"><span class="stat-label">RAM Usage</span><span class="stat-val" id="sys-ram">...</span></div>
+      </article>
 
-    <div class="footer-note" id="last-updated">Last refresh: --</div>
+      <article class="card">
+        <h3>GitHub Actions (Live)</h3>
+        <div class="stat-row"><span class="stat-label">Repo</span><span class="stat-val" id="gh-repo">...</span></div>
+        <div class="stat-row"><span class="stat-label">Last Commit</span><span class="stat-val" id="gh-commit">...</span></div>
+        <div class="stat-row"><span class="stat-label">Branch</span><span class="stat-val" id="gh-branch">...</span></div>
+        <div class="stat-row"><span class="stat-label">Run Status</span><span class="stat-val" id="gh-status">...</span></div>
+        <div style="margin-top:12px">
+          <a id="gh-link" href="#" target="_blank" style="color: var(--primary); font-size: 0.85rem">View Pipeline Logs →</a>
+        </div>
+      </article>
+    </div>
+
+    <section class="card">
+      <h3>Live Docker Runtime Logs (cicd-app)</h3>
+      <div class="stat-row"><span class="stat-label">Container Status</span><span class="stat-val"><span class="tag" id="dk-status">...</span></span></div>
+      <div class="logs-panel" id="dk-logs">Fetching container logs...</div>
+    </section>
   </main>
 
   <script>
-    const ids = {
-      service: document.getElementById('service-name'),
-      version: document.getElementById('version'),
-      commit: document.getElementById('commit'),
-      branch: document.getElementById('branch'),
-      chip: document.getElementById('health-chip'),
-      healthText: document.getElementById('health-text'),
-      stageTests: document.getElementById('stage-tests'),
-      stageBuild: document.getElementById('stage-build'),
-      stageDeploy: document.getElementById('stage-deploy'),
-      updated: document.getElementById('last-updated')
-    };
-
-    function setStage(el, state, ok) {
-      el.textContent = state;
-      el.classList.toggle('ok', ok);
-      el.classList.toggle('warn', !ok);
-    }
-
-    async function refreshDashboard() {
+    async function loadStats() {
       try {
-        const [metaRes, healthRes, workflowRes] = await Promise.all([
+        const [metaRes, statsRes, ghRes, dkRes, healthRes] = await Promise.all([
           fetch('/api/metadata'),
-          fetch('/health'),
-          fetch('/api/workflow-status')
+          fetch('/api/stats'),
+          fetch('/api/github'),
+          fetch('/api/docker'),
+          fetch('/health')
         ]);
 
-        const meta = await metaRes.json();
-        const health = await healthRes.json();
-        const workflow = await workflowRes.json();
+        const [meta, stats, gh, dk, h] = await Promise.all([
+          metaRes.json(), statsRes.json(), ghRes.json(), dkRes.json(), healthRes.json()
+        ]);
 
-        ids.service.textContent = meta.app;
-        ids.version.textContent = meta.version;
-        ids.commit.textContent = meta.commit_sha_short;
-        ids.branch.textContent = meta.branch;
+        document.getElementById('app-name').textContent = meta.app;
+        
+        document.getElementById('aws-type').textContent = stats.aws_instance;
+        document.getElementById('aws-region').textContent = stats.aws_region;
+        document.getElementById('sys-cpu').textContent = stats.cpu_usage + '%';
+        document.getElementById('sys-ram').textContent = stats.ram_usage + '%';
 
-        const healthy = Boolean(health.healthy);
-        ids.chip.classList.toggle('healthy', healthy);
-        ids.healthText.textContent = healthy ? 'Application healthy' : 'Application unhealthy';
+        document.getElementById('gh-repo').textContent = meta.repo;
+        document.getElementById('gh-commit').textContent = gh.commit_sha;
+        document.getElementById('gh-branch').textContent = gh.branch;
+        document.getElementById('gh-status').textContent = gh.status === 'completed' ? gh.conclusion : gh.status;
+        document.getElementById('gh-link').href = gh.html_url;
 
-        setStage(ids.stageTests, workflow.tests, workflow.tests_ok);
-        setStage(ids.stageBuild, workflow.docker_build, workflow.docker_build_ok);
-        setStage(ids.stageDeploy, workflow.aws_deploy, workflow.aws_deploy_ok);
+        document.getElementById('dk-status').textContent = dk.status;
+        document.getElementById('dk-logs').textContent = dk.logs;
 
-        ids.updated.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
-      } catch (error) {
-        ids.chip.classList.remove('healthy');
-        ids.healthText.textContent = 'Dashboard could not refresh';
-        setStage(ids.stageTests, 'Unknown', false);
-        setStage(ids.stageBuild, 'Unknown', false);
-        setStage(ids.stageDeploy, 'Unknown', false);
+        if (h.healthy) {
+          document.getElementById('health-dot').classList.add('ok');
+          document.getElementById('health-text').textContent = "App Running (" + meta.version + ")";
+        }
+      } catch (e) {
+        document.getElementById('health-text').textContent = "Connection Lost";
+        document.getElementById('health-dot').classList.remove('ok');
       }
     }
 
-    refreshDashboard();
-    setInterval(refreshDashboard, 8000);
+    loadStats();
+    setInterval(loadStats, 5000);
   </script>
 </body>
 </html>

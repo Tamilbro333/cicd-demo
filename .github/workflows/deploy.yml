@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Cloud Destinations Demo
+name: CI/CD Pipeline - Live Dashboard
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
 
-  # JOB 1: Run automated tests
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -29,11 +28,10 @@ jobs:
       - name: Run pytest
         run: pytest test_app.py -v --tb=short
 
-  # JOB 2: Build Docker image and push to Docker Hub
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: test  # only runs if tests PASS
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,11 +53,10 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/cicd-demo:${{ github.sha }}
           docker push ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
 
-  # JOB 3: Deploy to AWS EC2
   deploy:
     name: Deploy to AWS EC2
     runs-on: ubuntu-latest
-    needs: build-and-push  # only runs if image was built
+    needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy via SSH
@@ -69,25 +66,24 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Ensure Docker is available and running on EC2
             if ! command -v docker >/dev/null 2>&1; then
               curl -fsSL https://get.docker.com -o get-docker.sh
               sudo sh get-docker.sh
             fi
             sudo systemctl enable --now docker
 
-            # Pull the new image
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
 
-            # Stop and remove old container (ignore error if not running)
             sudo docker stop cicd-app || true
             sudo docker rm cicd-app || true
 
-            # Start new container
+            # Starting container with docker.sock mounted and GITHUB_REPO injected so Python can fetch info
             sudo docker run -d \
               --name cicd-app \
               --restart unless-stopped \
               -p 5000:5000 \
+              -v /var/run/docker.sock:/var/run/docker.sock:ro \
+              -e GITHUB_REPO=${{ github.repository }} \
               ${{ secrets.DOCKER_USERNAME }}/cicd-demo:latest
 
             echo "Deployment complete!"
