@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CI/CD Pipeline Live Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a111f;
+      --surface: #0f1a2e;
+      --surface-soft: rgba(255, 255, 255, 0.05);
+      --text: #f5f9ff;
+      --muted: #b4c2de;
+      --primary: #00d49a;
+      --primary-soft: rgba(0, 212, 154, 0.2);
+      --accent: #ff9d3b;
+      --danger: #ff5d5d;
+      --border: rgba(255, 255, 255, 0.18);
+      --ring: rgba(0, 212, 154, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 20%, rgba(0, 212, 154, 0.16), transparent 32%),
+        radial-gradient(circle at 90% 5%, rgba(255, 157, 59, 0.14), transparent 28%),
+        linear-gradient(180deg, #07101d 0%, #0b1324 46%, #0a111f 100%);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .layout {
+      width: min(1150px, 100%);
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(140deg, rgba(0, 212, 154, 0.14), rgba(15, 26, 46, 0.9));
+      border-radius: 18px;
+      padding: clamp(18px, 3vw, 30px);
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+      animation: rise 600ms ease-out both;
+    }
+
+    .eyebrow {
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 4.2vw, 2.8rem);
+      line-height: 1.08;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 72ch;
+      font-size: clamp(0.95rem, 2vw, 1.08rem);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--surface-soft);
+      backdrop-filter: blur(2px);
+      animation: rise 650ms ease-out both;
+    }
+
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .value {
+      margin-top: 8px;
+      font-size: 1.08rem;
+      word-break: break-word;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-family: "IBM Plex Mono", monospace;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 0 rgba(255, 93, 93, 0.55);
+      animation: pulse 1.8s infinite;
+    }
+
+    .healthy .dot {
+      background: var(--primary);
+      box-shadow: 0 0 0 0 var(--ring);
+    }
+
+    .pipeline {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(15, 26, 46, 0.88);
+      padding: 20px;
+      animation: rise 750ms ease-out both;
+    }
+
+    .pipeline h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      letter-spacing: 0.03em;
+    }
+
+    .stages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .stage {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--surface-soft);
+      transform: translateY(8px);
+      opacity: 0;
+      animation: stageIn 550ms ease forwards;
+    }
+
+    .stage:nth-child(1) { animation-delay: 110ms; }
+    .stage:nth-child(2) { animation-delay: 210ms; }
+    .stage:nth-child(3) { animation-delay: 310ms; }
+    .stage:nth-child(4) { animation-delay: 410ms; }
+
+    .stage-title {
+      font-size: 0.86rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .stage-state {
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    .ok {
+      color: var(--primary);
+    }
+
+    .warn {
+      color: var(--accent);
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: right;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 var(--ring);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(0, 212, 154, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(0, 212, 154, 0);
+      }
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes stageIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <section class="hero">
+      <div class="eyebrow">Cloud Destinations Demo</div>
+      <h1>CI/CD Pipeline Live Workflow Dashboard</h1>
+      <p class="subtitle">One screen to watch your commit-to-deploy journey: repository events, build lifecycle, deployment metadata, and application runtime health.</p>
+      <span id="health-chip" class="status-chip"><span class="dot"></span><span id="health-text">Checking health...</span></span>
+      <div class="stat-grid">
+        <article class="stat">
+          <div class="label">Service</div>
+          <div class="value" id="service-name">-</div>
+        </article>
+        <article class="stat">
+          <div class="label">Version</div>
+          <div class="value" id="version">-</div>
+        </article>
+        <article class="stat">
+          <div class="label">Commit SHA</div>
+          <div class="value" id="commit">-</div>
+        </article>
+        <article class="stat">
+          <div class="label">Branch</div>
+          <div class="value" id="branch">-</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="pipeline">
+      <h2>Pipeline Stage Status</h2>
+      <div class="stages">
+        <article class="stage">
+          <div class="stage-title">Code Pushed</div>
+          <div class="stage-state ok" id="stage-code">Completed</div>
+        </article>
+        <article class="stage">
+          <div class="stage-title">Tests</div>
+          <div class="stage-state" id="stage-tests">Pending</div>
+        </article>
+        <article class="stage">
+          <div class="stage-title">Docker Build</div>
+          <div class="stage-state" id="stage-build">Pending</div>
+        </article>
+        <article class="stage">
+          <div class="stage-title">AWS Deploy</div>
+          <div class="stage-state" id="stage-deploy">Pending</div>
+        </article>
+      </div>
+    </section>
+
+    <div class="footer-note" id="last-updated">Last refresh: --</div>
+  </main>
+
+  <script>
+    const ids = {
+      service: document.getElementById('service-name'),
+      version: document.getElementById('version'),
+      commit: document.getElementById('commit'),
+      branch: document.getElementById('branch'),
+      chip: document.getElementById('health-chip'),
+      healthText: document.getElementById('health-text'),
+      stageTests: document.getElementById('stage-tests'),
+      stageBuild: document.getElementById('stage-build'),
+      stageDeploy: document.getElementById('stage-deploy'),
+      updated: document.getElementById('last-updated')
+    };
+
+    function setStage(el, state, ok) {
+      el.textContent = state;
+      el.classList.toggle('ok', ok);
+      el.classList.toggle('warn', !ok);
+    }
+
+    async function refreshDashboard() {
+      try {
+        const [metaRes, healthRes, workflowRes] = await Promise.all([
+          fetch('/api/metadata'),
+          fetch('/health'),
+          fetch('/api/workflow-status')
+        ]);
+
+        const meta = await metaRes.json();
+        const health = await healthRes.json();
+        const workflow = await workflowRes.json();
+
+        ids.service.textContent = meta.app;
+        ids.version.textContent = meta.version;
+        ids.commit.textContent = meta.commit_sha_short;
+        ids.branch.textContent = meta.branch;
+
+        const healthy = Boolean(health.healthy);
+        ids.chip.classList.toggle('healthy', healthy);
+        ids.healthText.textContent = healthy ? 'Application healthy' : 'Application unhealthy';
+
+        setStage(ids.stageTests, workflow.tests, workflow.tests_ok);
+        setStage(ids.stageBuild, workflow.docker_build, workflow.docker_build_ok);
+        setStage(ids.stageDeploy, workflow.aws_deploy, workflow.aws_deploy_ok);
+
+        ids.updated.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        ids.chip.classList.remove('healthy');
+        ids.healthText.textContent = 'Dashboard could not refresh';
+        setStage(ids.stageTests, 'Unknown', false);
+        setStage(ids.stageBuild, 'Unknown', false);
+        setStage(ids.stageDeploy, 'Unknown', false);
+      }
+    }
+
+    refreshDashboard();
+    setInterval(refreshDashboard, 8000);
+  </script>
+</body>
+</html>
