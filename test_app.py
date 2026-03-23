@@ -38,6 +38,7 @@ def test_docker_endpoint(client):
     data = json.loads(response.data)
     assert 'logs' in data
 #comment line
+
 def test_health_endpoint(client):
     response = client.get('/health')
     data = json.loads(response.data)
